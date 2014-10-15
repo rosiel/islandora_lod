@@ -1,0 +1,67 @@
+<?php
+
+/**
+ * Implements hook_element_info_alter().
+ */
+function islandora_lod_element_info_alter(&$type){
+  // Change autocomplete for islandora authority elements
+  if (isset($type['islandora_authority_textfield'])) {
+    $type['islandora_authority_textfield']['#autocomplete_path'] = 'islandora/authorities_chooser';
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function islandora_lod_menu() {
+  $items = array();
+  $items['islandora/authorities_chooser'] = array(
+    'page callback' => 'islandora_authorities_chooser',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+    'file' => 'includes/callback.inc',
+  );
+  return $items;
+}
+
+
+/**
+ * Terrible rip-off of ntriples' autocomplete callback.
+ *
+ * @param string $vocab
+ *   A vocabulary alias.
+ * @param string $string
+ *   The string being queried against the autocomplete URL.
+ *
+ * @todo: Figure out a way to limit query to multiple
+ * vocabs, maybe using a comma-delimted list as an autocomplete
+ * path parameter. Don't want to use MySQL 'in' clause since it
+ * won't work in Postgres.
+ */
+function islandora_lod_ntriples_get_values($vocab, $string) {
+  $matches = array();
+  if ($vocab == 'all') {
+    $result = db_select('islandora_ntriples_triples', 'nt')
+      ->fields('nt', array('subject', 'search_string'))
+      ->condition('search_string', '%' . db_like($string) . '%', 'LIKE')
+      ->execute();
+  }
+  else {
+    $result = db_select('islandora_ntriples_triples', 'nt')
+      ->fields('nt', array('subject', 'search_string'))
+      ->condition('search_string', '%' . db_like($string) . '%', 'LIKE')
+      ->condition('vocabulary', $vocab)
+      ->execute();
+  }
+  // Prepare the results of the query to return to the form.
+  foreach ($result as $row) {
+    // We concatenate the URI and the search string as the key. This new
+    // string will be entered into the text field. On submit, we parse
+    // the value so we can look up the values for the URI in the ntriples
+    // table.
+    $key = $row->subject;
+    $matches[$key] = $row->search_string;
+  }
+  // Return the array.
+  return $matches;
+}

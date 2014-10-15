@@ -1,0 +1,7 @@
+name = Islandora LOD Authorities
+description = Extends Islandora Authority to let you lookup authority values in not-Solr.
+dependencies[] = islandora_authority
+dependencies[] = islandora_ntriples
+package = Islandora Tools
+version = 7.x-dev
+core = 7.x
